@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assignment 1</title>
+    <style>
+      h2,
+      p,
+      form {
+        text-align: center;
+      }
+      #form-area {
+        margin: 0 auto;
+        width: 50%;
+        padding: 10px;
+        text-align: center;
+      }
+
+      #rgn-label {
+        font-size: large;
+        font-weight: bold;
+        color: #0066ff;
+      }
+
+      .class {
+        width: 1%;
+      }
+
+      #button {
+        margin-left: 5px;
+      }
+
+      #input {
+        padding: 6px;
+      }
+
+      #countries {
+        justify-content: center;
+        margin: 0 auto;
+        width: 75%;
+        padding: 10px;
+        text-align: center;
+      }
+
+      thead {
+        background-color: #0066ff;
+        color: white;
+      }
+
+      tr:nth-child(even) {
+        background-color: #ccf2ff;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+
+    <script>
+      $(document).ready(function () {
+        // Function to load regions in the selection list on page load
+        function loadRegions() {
+          $.ajax({
+            type: "GET",
+            url: "https://www.cs.kent.ac.uk/people/staff/yh/co539-A1/countryData.php?regions",
+            success: function (response) {
+              $.each(response, function (key, value) {
+                $("#regions").append(
+                  '<option value="' + value + '">' + value + "</option>"
+                );
+              });
+            },
+          });
+        }
+
+        // Function to update the table with country details
+        function updateTable(region) {
+          $.ajax({
+            type: "GET",
+            url:
+              "https://www.cs.kent.ac.uk/people/staff/yh/co539-A1/countryData.php?region=" +
+              region,
+            success: function (data) {
+              $("#table-body").empty();
+              let countryCount = 0;
+              let totalPopulation = 0;
+              const languageCount = {};
+
+              $.each(data, function (key, value) {
+                $("#table-body").append(
+                  "<tr><td><img src='" +
+                    value.flag +
+                    "' height='30px' width='50px'></td><td>" +
+                    value.name +
+                    "</td><td>" +
+                    value.capital +
+                    "</td><td>" +
+                    value.info.population +
+                    "</td><td>" +
+                    value.info.language +
+                    "</td></tr>"
+                );
+
+                countryCount++;
+                totalPopulation += value.info.population;
+
+                const language = value.info.language.toLowerCase();
+                languageCount[language] = (languageCount[language] || 0) + 1;
+              });
+
+              let averagePopulation = totalPopulation / countryCount;
+              let mostPopularLanguage = Object.keys(languageCount).reduce(
+                (a, b) => (languageCount[a] > languageCount[b] ? a : b)
+              );
+
+              $("#info").html(
+                "<p>There are " +
+                  countryCount +
+                  " countries in " +
+                  region +
+                  "</p><p>Average Population is " +
+                  averagePopulation.toFixed(3) +
+                  "</p><p>The most popular language in " +
+                  region +
+                  " is " +
+                  mostPopularLanguage +
+                  " used by " +
+                  languageCount[mostPopularLanguage] +
+                  " countries</p>"
+              );
+            },
+          });
+        }
+
+        // Load regions on page load
+        loadRegions();
+
+        // Event listener for region selection change
+        $("#regions").change(function () {
+          let chosenRegion = $(this).val();
+          if (chosenRegion) {
+            updateTable(chosenRegion);
+          }
+        });
+
+        // Event listener for search button click
+        $("#search").on("click", function (event) {
+          event.preventDefault();
+          let value = $("#input").val().toLowerCase();
+          $("#table-body tr").each(function () {
+            let countryName = $(this)
+              .find("td:nth-child(2)")
+              .text()
+              .toLowerCase();
+            let countryCapital = $(this)
+              .find("td:nth-child(3)")
+              .text()
+              .toLowerCase();
+            $(this).toggle(
+              countryName.includes(value) || countryCapital.includes(value)
+            );
+          });
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <h2>Country Data</h2>
+    <p>
+      This website will allow you to select a region and then find the country
+      you are looking for within that region. Data about that country will be
+      displayed.
+    </p>
+    <form>
+      <label for="regions" id="rgn-label">Select a region:</label>
+      <select name="Region" id="regions">
+        <option value="">Choose a region</option>
+      </select>
+      <br /><br />
+      <input type="text" placeholder="Type..." id="input" />
+      <button id="search" class="btn btn-primary">Search</button>
+      <br /><br />
+      <div id="region-info">
+        <p id="info"></p>
+      </div>
+      <table id="countries" class="table" border="1">
+        <thead>
+          <tr>
+            <th>Flag</th>
+            <th>Name</th>
+            <th>Capital</th>
+            <th>Population</th>
+            <th>Language</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </form>
+  </body>
+</html>
